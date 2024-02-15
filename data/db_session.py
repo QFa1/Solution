@@ -1,0 +1,34 @@
+# подключение к базе данных и создание сессии для работы с ней
+import sqlalchemy as sa
+import sqlalchemy.orm as orm
+from sqlalchemy.orm import Session
+import sqlalchemy.ext.declarative as dec
+
+SqlAlchemyBase = dec.declarative_base()
+__factory = None  # получения сессий подключения к базе данных
+
+
+def global_init(db_file):
+    global __factory
+
+    if __factory:
+        return
+
+    if not db_file or not db_file.strip():
+        raise Exception("Необходимо указать файл базы данных.")
+
+    conn_str = f'sqlite:///{db_file.strip()}?check_same_thread=False'
+    print(f"Подключение к базе данных по адресу {conn_str}")
+
+    engine = sa.create_engine(conn_str, echo=False)  # Если echo сделать True
+    # , в консоль будут выводиться все SQL-запросы, которые сделает SQLAlchemy
+    __factory = orm.sessionmaker(bind=engine)
+
+    from . import __all_models
+
+    SqlAlchemyBase.metadata.create_all(engine)
+
+
+def create_session() -> Session:  # получения сессии подключения к нашей базе данных
+    global __factory
+    return __factory()
